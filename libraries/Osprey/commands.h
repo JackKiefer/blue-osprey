@@ -8,7 +8,6 @@
 #include "event.h"
 #include "gps.h"
 #include "radio.h"
-#include "thermometer.h"
 
 namespace Osprey {
   extern Accelerometer accelerometer;
@@ -17,7 +16,6 @@ namespace Osprey {
   extern Event event;
   extern GPS gps;
   extern Radio radio;
-  extern Thermometer thermometer;
 
   int commandStatus;
 

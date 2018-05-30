@@ -7,7 +7,6 @@
 #include <event.h>
 #include <gps.h>
 #include <radio.h>
-#include <thermometer.h>
 
 #define HEARTBEAT_LED 13
 #define HEARTBEAT_INTERVAL 25
@@ -20,7 +19,6 @@ namespace Osprey {
   Osprey::Clock clock;
   GPS gps;
   Radio radio;
-  Thermometer thermometer;
 
   extern int commandStatus;
   int counter;
@@ -73,7 +71,7 @@ void Osprey::printJSON() {
   Serial.println(barometer.getAltitudeAboveSeaLevel());
 
   Serial.println(", \"temp\": ");
-  Serial.println(thermometer.getTemperature());
+  Serial.println(baro.getTemperatureC());
 
   Serial.println(", \"id\": ");
   Serial.println(counter);
@@ -187,9 +185,6 @@ void Osprey::initSensors() {
     printInitError("Failed to intialize radio");
   }
 
-  if(!thermometer.init()) {
-    printInitError("Failed to intialize thermometer");
-  }
 }
 
 void Osprey::printInitError(const char* const message) {
