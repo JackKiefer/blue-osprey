@@ -91,7 +91,6 @@ int Osprey::zeroSensors(char *arg) {
 }
 
 int Osprey::setPressure(char *arg) {
-  barometer.setPressureSetting(atof(arg));
 
   commandStatus = COMMAND_ACK;
   return commandStatus;

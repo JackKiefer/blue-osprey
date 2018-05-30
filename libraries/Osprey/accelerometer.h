@@ -22,8 +22,10 @@ class Accelerometer : public virtual Sensor {
     float getRoll();
     float getPitch();
     float getHeading();
-    float getAcceleration();
-    float getRawAcceleration();
+    float getAccelerationG();
+    imu::Vector<3> getAccelerationVec(unsigned long const);
+    imu::Vector<3> getVelocityVec();
+    float accelNorm(imu::Vector<3> const & v);
     /* end */
 
     void getAccelOrientation(sensors_vec_t *orientation);
@@ -32,10 +34,24 @@ class Accelerometer : public virtual Sensor {
   protected:
     static Adafruit_BNO055 bno;
 
+    imu::Vector<3> oldAccel;
+    imu::Vector<3> newAccel;
+
+    imu::Vector<3> lastVel;
+
+    unsigned long oldTime = 0;
+    unsigned long newTime = 0;
+
+    double getDt();
+
+    unsigned long const UL_MAX = 4294967295;
+
     kalman_t roll;
     kalman_t pitch;
     kalman_t heading;
-    kalman_t acceleration;
+    kalman_t accelerationX;
+    kalman_t accelerationY;
+    kalman_t accelerationZ;
 };
 
 #endif

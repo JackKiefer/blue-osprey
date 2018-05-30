@@ -13,7 +13,7 @@
 
 namespace Osprey {
   Accelerometer accelerometer;
-  Barometer barometer;
+  Barometer barometer(&Wire);
   Battery battery;
   Event event;
   Osprey::Clock clock;
@@ -38,21 +38,28 @@ void setup(void) {
   initSensors();
   pinMode(HEARTBEAT_LED, OUTPUT);
   counter = 0;
+  // TODO calibrate altitude by running baro through kalman a bit
 }
 
 void loop(void) {
+  unsigned long start = micros();
   event.check();
   printJSON();
   processCommand();
-  heartbeat();
+//  heartbeat();
 
   counter++;
+  
+  unsigned long end = micros();
+  unsigned long delta = end - start;
+  Serial.print("Time: ");
+  Serial.print(delta);
+  Serial.print(" microseconds");
 }
 
 void Osprey::printJSON() {
   // The JSON structure is simple enough. Rather than bringing in another
   // library to do a bunch of heavylifting, just construct the string manually.
-
   Serial.println("{");
 
   Serial.println("\"roll\": ");
@@ -71,7 +78,7 @@ void Osprey::printJSON() {
   Serial.println(barometer.getAltitudeAboveSeaLevel());
 
   Serial.println(", \"temp\": ");
-  Serial.println(baro.getTemperatureC());
+  Serial.println(barometer.getTemperatureC());
 
   Serial.println(", \"id\": ");
   Serial.println(counter);
@@ -110,9 +117,6 @@ void Osprey::printJSON() {
   Serial.println(", \"previous_command\": \"");
   Serial.println(radio.getMostRecentMessage());
   Serial.println("\"");
-
-  Serial.println(", \"pressure_setting\": ");
-  Serial.println(barometer.getPressureSetting());
 
   Serial.println(", \"phase\": ");
   Serial.println(event.getPhase());
@@ -154,12 +158,6 @@ void Osprey::initSensors() {
     printInitError("Failed to intialize accelerometer");
   }
   
-  while(true){
-  Serial.println("\"rollBITCH\": ");
-  Serial.println(accelerometer.getRoll());
-  heartbeat();
-  }
-
 
   if(!barometer.init()) {
     printInitError("Failed to intialize barometer");

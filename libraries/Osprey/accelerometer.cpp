@@ -10,6 +10,16 @@ Accelerometer::Accelerometer() : Sensor(KALMAN_PROCESS_NOISE, KALMAN_MEASUREMENT
   pitch = kalmanInit(90);
   heading  = kalmanInit(0);
   acceleration  = kalmanInit(1);
+  oldAccel[0] = 0.0;
+  oldAccel[1] = 0.0;
+  oldAccel[2] = 0.0;
+  newAccel[0] = 0.0;
+  newAccel[1] = 0.0;
+  newAccel[2] = 0.0;
+  lastVel[0] = 0.0;
+  lastVel[1] = 0.0;
+  lastVel[2] = 0.0;
+
 }
 
 int Accelerometer::init() {
@@ -52,12 +62,71 @@ float Accelerometer::getHeading() {
   return heading.value;
 }
 
-float Accelerometer::getAcceleration() {
-  kalmanUpdate(&acceleration, getRawAcceleration());
-  return acceleration.value;
+
+imu::Vector<3> Accelerometer::getAccelerationVec(unsigned long const curTime) {
+  sensors_event_t event;
+  bno.getOspreyEvent(&event, Adafruit_BNO055::VECTOR_ACCELEROMETER);
+  kalmanUpdate(&accelerationX, event.acceleration.x);
+  kalmanUpdate(&accelerationY, event.acceleration.y);
+  kalmanUpdate(&accelerationZ, event.acceleration.z);
+  imu::Vector<3> xyz;
+  xyz[0] = accelerationX.value;
+  xyz[1] = accelerationY.value;
+  xyz[2] = accelerationZ.value;
+
+
+  oldAccel = newAccel;
+  newAccel = xyz;
+
+  oldTime = newTime;
+  newTime = curTime;
+
+  return xyz;
 }
 
-float Accelerometer::getRawAcceleration() {
+unsigned long Accelerometer::getDt() {
+  if (newTime >= oldTime)
+  {
+    return newTime - oldTime;
+  }
+  else
+  {
+    /* newTime < oldTime */
+    /* Overflow occurred, that's okay! */
+    return (UL_MAX - oldTime) + newTime;
+  }
+}
+
+float trapezoidalIntegrate(a0, a1, dt)
+{
+  return (a0 * dt) + ((a1-a0)*dt)/2.0;
+}
+
+imu::Vector<3> Accelerometer::getVelocityVec() {
+  dt = getDt();
+  if (dt == 0.0)
+  {
+    return lastVel;
+  }
+  /* Microseconds -> Seconds */
+  dt = dt / 1000000.0;
+
+  imu::Vector<3> vel;
+  vel[0] = trapezoidalIntegrate(oldAccel[0],newAccel[0],dt);
+  vel[1] = trapezoidalIntegrate(oldAccel[1],newAccel[1],dt);
+  vel[2] = trapezoidalIntegrate(oldAccel[2],newAccel[2],dt);
+
+  lastVel = vel;
+
+  return vel;
+}
+
+float accelNorm(imu::Vector<3> const & v)
+{
+  return sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+}
+
+float Accelerometer::getAccelerationG() {
   sensors_event_t event;
   bno.getOspreyEvent(&event, Adafruit_BNO055::VECTOR_ACCELEROMETER);
 

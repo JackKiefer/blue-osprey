@@ -55,7 +55,8 @@ class MS5xxx
 	unsigned long read_adc(unsigned char aCMD);
 	
   public:
-    MS5xxx(TwoWire *aWire);
+    MS5xxx();
+    void setWire(TwoWire*);
     void setI2Caddr(char aAddr);
     byte connect();
     

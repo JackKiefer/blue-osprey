@@ -21,9 +21,14 @@
 
 #include "MS5xxx.h"
 
-MS5xxx::MS5xxx(TwoWire *aWire) : i2caddr(I2C_MS5607) {
-	_Wire=aWire;
+MS5xxx::MS5xxx() : i2caddr(I2C_MS5607) {
 }
+
+void MS5xxx::setWire(TwoWire* wire)
+{
+  _Wire = wire;
+}
+
 
 void MS5xxx::setI2Caddr(char aAddr) {
 	i2caddr=aAddr;

@@ -1,13 +1,16 @@
 #include "barometer.h"
 
+MS5xxx Barometer::baro = MS5xxx();
 
-Barometer::Barometer() : Sensor(KALMAN_PROCESS_NOISE, KALMAN_MEASUREMENT_NOISE, KALMAN_ERROR) {
+
+Barometer::Barometer(TwoWire* wire) : Sensor(KALMAN_PROCESS_NOISE, KALMAN_MEASUREMENT_NOISE, KALMAN_ERROR) {
+  baro.setWire(wire);
   altitude = kalmanInit(0);
 }
 
-float getTemperatureC()
+float Barometer::getTemperatureC()
 {
-  return baro.getTemp() * 100.0;
+  return baro.GetTemp() * 100.0;
 }
 
 int Barometer::init() {
@@ -15,7 +18,9 @@ int Barometer::init() {
 }
 
 float Barometer::getPressure() {
-  kalmanUpdate(&altitude, baro.getPres());
+  baro.ReadProm();
+  baro.Readout();
+  kalmanUpdate(&altitude, baro.GetPres());
   return altitude.value;
 }
 
@@ -32,7 +37,7 @@ float Barometer::getAltitudeAboveSeaLevel() {
     return NO_DATA;
   }
 
-  return ( (pow(SEA_LEVEL/pressure,EXPONENT)-1.0)*(temp+TO_KELVIN) )/(DENOM);
+  return (( (pow(SEA_LEVEL_PRESSURE_Pa/pressure,EXPONENT)-1.0)*(temp+TO_KELVIN) )/(DENOM))/1000.0;
 }
 
 float Barometer::getAltitudeAboveGround() {
