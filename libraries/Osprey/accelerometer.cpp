@@ -9,7 +9,9 @@ Accelerometer::Accelerometer() : Sensor(KALMAN_PROCESS_NOISE, KALMAN_MEASUREMENT
   roll = kalmanInit(0);
   pitch = kalmanInit(90);
   heading  = kalmanInit(0);
-  acceleration  = kalmanInit(1);
+  accelerationX  = kalmanInit(1);
+  accelerationY  = kalmanInit(1);
+  accelerationZ  = kalmanInit(1);
   oldAccel[0] = 0.0;
   oldAccel[1] = 0.0;
   oldAccel[2] = 0.0;
@@ -97,19 +99,19 @@ unsigned long Accelerometer::getDt() {
   }
 }
 
-float trapezoidalIntegrate(a0, a1, dt)
+float trapezoidalIntegrate(float a0, float a1, float dt)
 {
   return (a0 * dt) + ((a1-a0)*dt)/2.0;
 }
 
 imu::Vector<3> Accelerometer::getVelocityVec() {
-  dt = getDt();
-  if (dt == 0.0)
+  unsigned long udt = getDt();
+  if (udt == 0)
   {
     return lastVel;
   }
   /* Microseconds -> Seconds */
-  dt = dt / 1000000.0;
+  float dt = dt / 1000000.0;
 
   imu::Vector<3> vel;
   vel[0] = trapezoidalIntegrate(oldAccel[0],newAccel[0],dt);

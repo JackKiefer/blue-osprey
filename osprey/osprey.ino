@@ -9,7 +9,7 @@
 #include <radio.h>
 
 #define HEARTBEAT_LED 13
-#define HEARTBEAT_INTERVAL 25
+#define HEARTBEAT_INTERVAL 1000
 
 namespace Osprey {
   Accelerometer accelerometer;
@@ -71,8 +71,8 @@ void Osprey::printJSON() {
   Serial.println(", \"heading\": ");
   Serial.println(accelerometer.getHeading());
 
-  Serial.println(", \"raw_acceleration\": ");
-  Serial.println(accelerometer.getRawAcceleration());
+  Serial.println(", \"acceleration magnitude (g)\": ");
+  Serial.println(accelerometer.getAccelerationG());
 
   Serial.println(", \"pressure_altitude\": ");
   Serial.println(barometer.getAltitudeAboveSeaLevel());
@@ -92,9 +92,6 @@ void Osprey::printJSON() {
 
   Serial.println(", \"agl\": ");
   Serial.println(barometer.getAltitudeAboveGround());
-
-  Serial.println(", \"acceleration\": ");
-  Serial.println(accelerometer.getAcceleration());
 
   Serial.println(", \"latitude\": ");
   Serial.println(gps.getLatitude(), 6);

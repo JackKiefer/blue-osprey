@@ -42,7 +42,7 @@ class Accelerometer : public virtual Sensor {
     unsigned long oldTime = 0;
     unsigned long newTime = 0;
 
-    double getDt();
+    unsigned long getDt();
 
     unsigned long const UL_MAX = 4294967295;
 

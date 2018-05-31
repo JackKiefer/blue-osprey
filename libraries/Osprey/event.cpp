@@ -20,7 +20,8 @@ int Event::init() {
 }
 
 void Event::check() {
-  float acceleration = accelerometer.getAcceleration();
+  //FIXME
+  float acceleration = accelerometer.getAccelerationG();
   float altitude = barometer.getAltitudeAboveGround();
 
   switch(phase) {
