@@ -116,13 +116,39 @@ StateVector Truth_gravdiffeq_air_brake(StateVector x, float t)
   return xdot; 
 }
 
-/*
+StateVector mult(float c, StateVector v)
+{
+  return StateVector(c*v.height, Vector3D(c*v.vec.x, c*v.vec.y, c*v.vec.z), c*v.dragCoeff);
+}
+
+StateVector add(StateVector a, StateVector b)
+{
+  return StateVector(
+      a.height + b.height,
+      Vector3D(
+        a.vec.x + b.vec.x,
+        a.vec.y + b.vec.y,
+        a.vec.z + b.vec.z
+      ),
+      a.dragCoeff + b.dragCoeff
+  );
+}
+
 StateVector Truth_prop_state_rk45(StateVector xold, float t, float dt)
 {
   float h = dt;
   float hh = h/2.0;
   float h6 = h/6.0;
 
-  StateVector y = xold;
+  StateVector y    = xold;
+  StateVector dydx = Truth_gravdiffeq_air_brake(y, t);
+  StateVector yt   = add(y, mult(hh,dydx));
+  StateVector dyt  = Truth_gravdiffeq_air_brake(yt, t);
+  yt = add(y, mult(hh, dyt));
+  StateVector dym = Truth_gravdiffeq_air_brake(yt, t);
+  yt  = add(y, mult(h, dym));
+  dym = add(dyt, dym);
   
-}*/
+  dyt = Truth_gravdiffeq_air_brake(yt, t);
+  return add(y,mult(h6,(add(dydx,add(dyt,mult(2,dym))))));
+}
