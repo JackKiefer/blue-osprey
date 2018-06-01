@@ -1,5 +1,27 @@
 #include <math.h>
 
+struct 3DVector
+{
+  3DVector(float a, float b, float c) : x(a), y(b), z(c) {}
+  float x;
+  float y;
+  float z;
+  float norm()
+  { 
+    return sqrt((x*x)+(y*y)+(z*z)); 
+  }
+};
+
+struct StateVector {
+  StateVector(float a, 3DVector s, float d) : height(a), vec(s), dragCoeff(d) {}
+  float height;
+  3DVector vec;
+  float dragCoeff;
+};
+
+float const GRAV   = 9.81;
+3DVector const I_Z = 3DVector(0,0,1);
+
 /* Calculates whether or not the satellite is in eclipse.
 * input: h - height above the ellipsoid 
 * output: rho - atmospheric density, in kg/m^3
@@ -62,4 +84,32 @@ float Exponentially_Decaying_Density_Model(float h)
   }
 
   return rho_0*exp(-(h-h_0)/H); // atmospheric density, in kg/m^3
+}
+
+
+StateVector Truth_gravdiffeq_air_brake(StateVector x, float t)
+{
+  float mag_v = x.vec.norm();
+
+  StateVector xdot;
+
+  xdot.height = x.vec.z;
+
+  float rho;
+  
+  if (x.height < 0)
+  {
+    rho = Exponentially_Decaying_Density_Model(0);
+  }
+  else
+  {
+    rho = Exponentially_Decaying_Density_Model(x.height/1000.0);
+  }
+
+  float newX = -(rho * x.vec.x * mag_v * x.dragCoeff);
+  float newY = -(rho * x.vec.y * mag_v * x.dragCoeff);
+  float newZ = -(rho * x.vec.z * mag_v * x.dragCoeff) - GRAV; 
+  xdot.vec = 3DVector(newX, newY, newZ);
+  xdot.dragCoeff = 0.0; 
+  return xdot; 
 }
