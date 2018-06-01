@@ -1,8 +1,9 @@
 #include <math.h>
 
-struct 3DVector
+struct Vector3D
 {
-  3DVector(float a, float b, float c) : x(a), y(b), z(c) {}
+  Vector3D(float a, float b, float c) : x(a), y(b), z(c) {}
+  Vector3D() {}
   float x;
   float y;
   float z;
@@ -13,14 +14,15 @@ struct 3DVector
 };
 
 struct StateVector {
-  StateVector(float a, 3DVector s, float d) : height(a), vec(s), dragCoeff(d) {}
+  StateVector(float a, Vector3D s, float d) : height(a), vec(s), dragCoeff(d) {}
+  StateVector() {}
   float height;
-  3DVector vec;
+  Vector3D vec;
   float dragCoeff;
 };
 
 float const GRAV   = 9.81;
-3DVector const I_Z = 3DVector(0,0,1);
+Vector3D const I_Z = Vector3D(0,0,1);
 
 /* Calculates whether or not the satellite is in eclipse.
 * input: h - height above the ellipsoid 
@@ -109,7 +111,18 @@ StateVector Truth_gravdiffeq_air_brake(StateVector x, float t)
   float newX = -(rho * x.vec.x * mag_v * x.dragCoeff);
   float newY = -(rho * x.vec.y * mag_v * x.dragCoeff);
   float newZ = -(rho * x.vec.z * mag_v * x.dragCoeff) - GRAV; 
-  xdot.vec = 3DVector(newX, newY, newZ);
+  xdot.vec = Vector3D(newX, newY, newZ);
   xdot.dragCoeff = 0.0; 
   return xdot; 
 }
+
+/*
+StateVector Truth_prop_state_rk45(StateVector xold, float t, float dt)
+{
+  float h = dt;
+  float hh = h/2.0;
+  float h6 = h/6.0;
+
+  StateVector y = xold;
+  
+}*/
