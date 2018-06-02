@@ -14,15 +14,32 @@ struct Vector3D
 };
 
 struct StateVector {
-  StateVector(float a, Vector3D s, float d) : height(a), vec(s), dragCoeff(d) {}
+  StateVector(float a, Vector3D s, float d) : height(a), vec(s), balCoeff(d) {}
   StateVector() {}
   float height;
   Vector3D vec;
-  float dragCoeff;
+  float balCoeff;
 };
 
-float const GRAV   = 9.81;
 Vector3D const I_Z = Vector3D(0,0,1);
+
+/* Preliminaries */
+float const TIME = 0; // in seconds
+float const DT = 0.1; // in seconds
+float const T_FINAL = 60; // in seconds
+float const GRAV = 9.81; // in m/s^2
+float const TOLERANCE = 1e-10;
+
+float const Cd_OPEN = 0.80;
+float const Cd_CLOSED = 0.75;
+float const AREA_BRAKES = 0.0332438045; // in sq. meters
+float const A_ref_CLOSED = 0.0192; // in sq. meters
+float const A_ref_OPEN = A_ref_CLOSED + AREA_BRAKES; // in sq. meters
+float const MASS_ROCKET = 17.9000; // in Kg
+
+float const h_TARGET = 3000; // in meters
+
+
 
 /* Calculates whether or not the satellite is in eclipse.
 * input: h - height above the ellipsoid 
@@ -108,17 +125,17 @@ StateVector Truth_gravdiffeq_air_brake(StateVector x, float t)
     rho = Exponentially_Decaying_Density_Model(x.height/1000.0);
   }
 
-  float newX = -(rho * x.vec.x * mag_v * x.dragCoeff);
-  float newY = -(rho * x.vec.y * mag_v * x.dragCoeff);
-  float newZ = -(rho * x.vec.z * mag_v * x.dragCoeff) - GRAV; 
+  float newX = -(rho * x.vec.x * mag_v * x.balCoeff);
+  float newY = -(rho * x.vec.y * mag_v * x.balCoeff);
+  float newZ = -(rho * x.vec.z * mag_v * x.balCoeff) - GRAV; 
   xdot.vec = Vector3D(newX, newY, newZ);
-  xdot.dragCoeff = 0.0; 
+  xdot.balCoeff = 0.0; 
   return xdot; 
 }
 
 StateVector mult(float c, StateVector v)
 {
-  return StateVector(c*v.height, Vector3D(c*v.vec.x, c*v.vec.y, c*v.vec.z), c*v.dragCoeff);
+  return StateVector(c*v.height, Vector3D(c*v.vec.x, c*v.vec.y, c*v.vec.z), c*v.balCoeff);
 }
 
 StateVector add(StateVector a, StateVector b)
@@ -130,7 +147,7 @@ StateVector add(StateVector a, StateVector b)
         a.vec.y + b.vec.y,
         a.vec.z + b.vec.z
       ),
-      a.dragCoeff + b.dragCoeff
+      a.balCoeff + b.balCoeff
   );
 }
 
@@ -151,4 +168,30 @@ StateVector Truth_prop_state_rk45(StateVector xold, float t, float dt)
   
   dyt = Truth_gravdiffeq_air_brake(yt, t);
   return add(y,mult(h6,(add(dydx,add(dyt,mult(2,dym))))));
+}
+
+void gen_traj_nom(StateVector* nominal_x, StateVector x, float t)
+{
+  float h = x.height;
+  Vector3D v = x.vec;
+  float beta = x.balCoeff;
+  float dt = DT;
+  unsigned int total_counter = 0;
+  nominal_x[0] = x;
+
+  while (t < T_FINAL)
+  {
+    if (t + dt > T_FINAL)
+    {
+      dt = T_FINAL - t;
+    }
+    StateVector xold = x;
+    StateVector xnew = Truth_prop_state_rk45(xold, t, dt);
+    t += dt;
+    ++total_counter;
+    h = xnew.height;
+    v = xnew.vec;
+    beta = xnew.balCoeff;
+    nominal_x[total_counter] = xnew;
+  }
 }
