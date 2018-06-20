@@ -1,3 +1,24 @@
 [submodule "Adafruit-GPS-Library"]
   path = libraries/Adafruit-GPS-Library
   url  = https://github.com/adafruit/Adafruit_GPS
+
+[submodule "Adafruit_10DOF"]
+  path = libraries/Adafruit_10DOF
+  url  = https://github.com/adafruit/Adafruit_10DOF
+
+[submodule "Adafruit_BMP085_Unified"]
+  path = libraries/Adafruit_BMP085_Unified
+  url  = https://github.com/adafruit/Adafruit_BMP085_Unified
+
+[submodule "Adafruit_L3GD20_U"]
+  path = libraries/Adafruit_L3GD20_U
+  url  = https://github.com/adafruit/Adafruit_L3GD20_U
+
+[submodule "Adafruit_LSM303DLHC"]
+  path = libraries/Adafruit_LSM303DLHC
+  url  = https://github.com/adafruit/Adafruit_LSM303DLHC
+
+[submodule "Adafruit_Sensor"]
+  path = libraries/Adafruit_Sensor
+  url  = https://github.com/adafruit/Adafruit_Sensor
+
