@@ -1,0 +1,3 @@
+[submodule "Adafruit-GPS-Library"]
+  path = libraries/Adafruit-GPS-Library
+  url  = https://github.com/adafruit/Adafruit_GPS
