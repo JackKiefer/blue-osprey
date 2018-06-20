@@ -5,11 +5,53 @@
 #include <clock.h>
 #include <constants.h>
 #include <event.h>
+#include <logger.h>
 #include <gps.h>
 #include <radio.h>
 
-#define HEARTBEAT_LED 13
-#define HEARTBEAT_INTERVAL 1000
+#include <SPI.h>
+#include <SD.h>
+
+#define chipSelect 4
+#define FILENAME_FORMAT "%d.log"
+
+char filename[20];
+
+float initAlt = -1;
+
+void blowUp(const char* const message) {
+  while(1) {
+    Serial.println(message);
+    Serial.println("Check your connections and reset the board");
+    Serial.println("\r\n");
+    delay(1000);
+  }
+}
+
+void initSD() {
+  Serial.print("Initializing SD card...");
+
+  // see if the card is present and can be initialized:
+  if (!SD.begin(chipSelect)) {
+    blowUp("Card failed, or not present");
+    // don't do anything more:
+    return;
+  }
+
+  int logNumber = 0;
+  // Find the first unused log number
+  do {
+    sprintf(filename, FILENAME_FORMAT, logNumber);
+    logNumber++;
+  } while(SD.exists(filename));
+
+  
+  Serial.println("card initialized.");
+}
+
+#define chipSelect = 4;
+#define HEARTBEAT_LED 8
+#define HEARTBEAT_INTERVAL 25
 
 namespace Osprey {
   Accelerometer accelerometer;
@@ -32,152 +74,96 @@ namespace Osprey {
 
 
 using namespace Osprey;
+unsigned long start;
+unsigned long brakeStart;
+bool deployed;
+
+#define DEPLOY_TIME_MILLIS 120000
+
 
 void setup(void) {
   Serial.begin(9600);
-  initSensors();
   pinMode(HEARTBEAT_LED, OUTPUT);
-  counter = 0;
-  // TODO calibrate altitude by running baro through kalman a bit
+  pinMode(13, OUTPUT);
+  digitalWrite(13, LOW);
+  initSD();
+  initSensors();
+  deployed = false;
 }
 
-void loop(void) {
-  unsigned long start = micros();
-  event.check();
-  printJSON();
-  processCommand();
-//  heartbeat();
+void deploy()
+{
+  Serial.println("Deploying!");
+  digitalWrite(13,HIGH);
+  delay(1500);
+  digitalWrite(13,LOW);
+}
 
-  counter++;
-  
-  unsigned long end = micros();
-  unsigned long delta = end - start;
-  Serial.print("Time: ");
-  Serial.print(delta);
-  Serial.print(" microseconds");
+void loop(void) {  
+  printJSON();
+  heartbeat();
 }
 
 void Osprey::printJSON() {
+  File dataFile = SD.open(filename, FILE_WRITE);
   // The JSON structure is simple enough. Rather than bringing in another
   // library to do a bunch of heavylifting, just construct the string manually.
-  Serial.println("{");
+  dataFile.println("{");
 
-  Serial.println("\"roll\": ");
-  Serial.println(accelerometer.getRoll());
+  dataFile.println("\"roll\": ");
+  dataFile.println(accelerometer.getRoll());
 
-  Serial.println(", \"pitch\": ");
-  Serial.println(accelerometer.getPitch());
+  dataFile.println(", \"pitch\": ");
+  dataFile.println(accelerometer.getPitch());
 
-  Serial.println(", \"heading\": ");
-  Serial.println(accelerometer.getHeading());
+  dataFile.println(", \"heading\": ");
+  dataFile.println(accelerometer.getHeading());
 
-  Serial.println(", \"acceleration magnitude (g)\": ");
-  Serial.println(accelerometer.getAccelerationG());
+  dataFile.println(", \"acceleration magnitude (g)\": ");
+  dataFile.println(accelerometer.getAccelerationG());
 
-  Serial.println(", \"pressure_altitude\": ");
-  Serial.println(barometer.getAltitudeAboveSeaLevel());
+  dataFile.println(", \"pressure_altitude\": ");
+  dataFile.println(barometer.getAltitudeAboveSeaLevel());
 
-  Serial.println(", \"temp\": ");
-  Serial.println(barometer.getTemperatureC());
-
-  Serial.println(", \"id\": ");
-  Serial.println(counter);
-
-  Serial.println(", \"delta\": ");
-  Serial.println(Osprey::clock.getSeconds());
-
-  Serial.println(", \"iso8601\": \"");
-  Serial.println(gps.getIso8601());
-  Serial.println("\"");
-
-  Serial.println(", \"agl\": ");
-  Serial.println(barometer.getAltitudeAboveGround());
-
-  Serial.println(", \"latitude\": ");
-  Serial.println(gps.getLatitude(), 6);
-
-  Serial.println(", \"longitude\": ");
-  Serial.println(gps.getLongitude(), 6);
-
-  Serial.println(", \"speed\": ");
-  Serial.println(gps.getSpeed());
-
-  Serial.println(", \"gps_altitude\": ");
-  Serial.println(gps.getAltitude());
-
-  Serial.println(", \"gps_quality\": ");
-  Serial.println(gps.getQuality());
-
-  Serial.println(", \"command_status\": ");
-  Serial.println(commandStatus);
-
-  Serial.println(", \"previous_command\": \"");
-  Serial.println(radio.getMostRecentMessage());
-  Serial.println("\"");
-
-  Serial.println(", \"phase\": ");
-  Serial.println(event.getPhase());
-
-  Serial.println(", \"battery\": ");
-  Serial.println(battery.getVoltage(), 2);
-
-  Serial.println(", \"apogee_cause\": ");
-  Serial.println(event.getApogeeCause());
-
-  Serial.println(", \"armed\": ");
-  Serial.println(event.isArmed());
-
-  Serial.println(", \"apogee_fired\": ");
-  Serial.println(event.didFire(EVENT_APOGEE));
-
-  Serial.println(", \"main_fired\": ");
-  Serial.println(event.didFire(EVENT_MAIN));
-
-  Serial.println(", \"main_alt\": ");
-  Serial.println(event.getAltitude(EVENT_MAIN));
-
-  Serial.println(", \"logging\": ");
-  Serial.println(radio.isLogging());
-
-  Serial.println("}");
-  Serial.println("\r\n");
+  dataFile.println(", \"temp\": ");
+  dataFile.println(barometer.getTemperatureC());
+  dataFile.println(", \"time\": ");
+  dataFile.println(Osprey::clock.getSeconds());
+  dataFile.println(", \"agl\": ");
+  float alt = barometer.getAltitudeAboveGround();
+  if (initAlt == -1)
+  {
+    initAlt = alt;
+  }
+  if (!deployed && alt-initAlt>=1000)
+  {
+    delay(600);
+    deploy();
+    deployed = true;
+  }
+  dataFile.println(alt);
+  dataFile.println("}");
+  dataFile.println("\r\n");
+  dataFile.close();
 }
 
 void Osprey::heartbeat() {
-//  digitalWrite(HEARTBEAT_LED, HIGH);
+//  Serial.println("oiiiiiiiii");
+  digitalWrite(HEARTBEAT_LED, HIGH);
   delay(HEARTBEAT_INTERVAL);
-//  digitalWrite(HEARTBEAT_LED, LOW);
+  digitalWrite(HEARTBEAT_LED, LOW);
 }
 
 void Osprey::initSensors() {
 
   if(!accelerometer.init()) {
-    printInitError("Failed to intialize accelerometer");
+    printInitError("Failed to intialize IMU (BNO055)");
   }
-  
-
   if(!barometer.init()) {
-    printInitError("Failed to intialize barometer");
+    printInitError("Failed to intialize barometer (MS5607)");
   }
-
-  if(!battery.init()) {
-    printInitError("Failed to intialize battery");
-  }
-
   if(!Osprey::clock.init()) {
     printInitError("Failed to intialize clock");
-  }
-
-  if(!event.init()) {
-    printInitError("Failed to intialize events");
-  }
-
-  if(!gps.init()) {
-    printInitError("Failed to intialize GPS");
-  }
-
-  if(!radio.init()) {
-    printInitError("Failed to intialize radio");
   }
 
 }
@@ -185,7 +171,7 @@ void Osprey::initSensors() {
 void Osprey::printInitError(const char* const message) {
   while(1) {
     Serial.println(message);
-    Serial.println("boiiiiiiii");
+    Serial.println("Check your connections and reset the board");
     Serial.println("\r\n");
     delay(1000);
   }

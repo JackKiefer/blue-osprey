@@ -12,12 +12,13 @@ int Radio::messagePosition = 0;
 
 int Radio::init() {
   RadioSerial->begin(RADIO_BAUD);
-
+/*
   if(!logger.init()) {
    return 0;
   }
 
   logging = false;
+  */
 
   return 1;
 }
@@ -27,9 +28,11 @@ void Radio::send(const char* const message) {
     RadioSerial->write(message[i]);
   }
 
+  /*
   if(isLogging()) {
     logger.log(message);
   }
+  */
 }
 
 void Radio::send(float message, int precision) {

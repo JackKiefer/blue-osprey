@@ -195,3 +195,5 @@ void gen_traj_nom(StateVector* nominal_x, StateVector x, float t)
     nominal_x[total_counter] = xnew;
   }
 }
+
+

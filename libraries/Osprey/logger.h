@@ -18,6 +18,7 @@ class Logger : public virtual Sensor {
     void close();
     void flush();
     void log(const char* message);
+    void log(float n);
 
   protected:
     File file;

@@ -3,8 +3,8 @@
 Logger::Logger() {}
 
 int Logger::init() {
-  if(!SD.begin(SD_CHIP_SELECT)) {
-    return 0;
+  while(!SD.begin(SD_CHIP_SELECT)) {
+    delay(25);
   }
 
   return 1;
@@ -35,4 +35,8 @@ void Logger::flush() {
 
 void Logger::log(const char* message) {
   file.write(message);
+}
+
+void Logger::log(float n) {
+  file.write(n);
 }
